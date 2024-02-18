@@ -45,10 +45,16 @@ app.get('*', function(req, res){
   res.sendFile(path.join(__dirname, '../client/dist/index.html'));
 })
 
-app.use(cors({
-  credentials: true,
-  origin: "http://localhost:5173",
+// app.use(cors({
+//   credentials: true,
+//   origin: "https://65d234405624ed54186120f7--eclectic-chimera-173744.netlify.app/",
   
+// }));
+
+app.use(cors({
+  origin: 'https://eclectic-chimera-173744.netlify.app/' || `http://localhost:4040`,
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 async function getUserDataFromRequest(req) {
