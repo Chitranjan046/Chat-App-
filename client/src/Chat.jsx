@@ -24,7 +24,7 @@ export default function Chat() {
     ws.addEventListener('message', handleMessage);
     ws.addEventListener('close', () => {
       setTimeout(() => {
-        console.log('Disconnected. Trying to reconnect.');
+        // console.log('Disconnected. Trying to reconnect.');
         connectToWs();
       }, 1000);
     });
@@ -38,7 +38,7 @@ export default function Chat() {
   }
   function handleMessage(ev) {
     const messageData = JSON.parse(ev.data);
-    console.log({ev,messageData});
+    // console.log({ev,messageData});
     if ('online' in messageData) {
       showOnlinePeople(messageData.online);
     } else if ('text' in messageData) {

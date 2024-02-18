@@ -1,7 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cookieParser = require('cookie-parser');
-// const dotenv = require('dotenv');
+const dotenv = require('dotenv');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
@@ -9,12 +9,18 @@ const User = require('./models/User');
 const Message = require('./models/Message');
 const ws = require('ws');
 const fs = require('fs');
+const app = express();
+const http = require('http');
+const path = require('path');
+const server = http.createServer(app);
+
+const PORT = process.env.PORT || 4040;
 mongoose.set('strictQuery', true);
 // dotenv.config();
 require('dotenv').config();
 
 // Connection URL from environment variables
-const mongoURL = 'mongodb://127.0.0.1/Chat'; // Replace 'yourDatabaseName' with the name of your database
+const mongoURL = process.env.MONGO_URL; // Replace 'yourDatabaseName' with the name of your database
 
 mongoose.connect(mongoURL, { useNewUrlParser: true, useUnifiedTopology: true });
 
@@ -22,17 +28,23 @@ const db = mongoose.connection;
 
 db.on('error', console.error.bind(console, 'connection error:'));
 db.once('open', function () {
-  console.log('Connected to the local MongoDB database successfully');
+  // console.log('Connected to the  database successfully');
   // Your code here to start your application or perform database operations
 });
 
 const jwtSecret = process.env.JWT_SECRET;
 const bcryptSalt = bcrypt.genSaltSync(10);
 
-const app = express();
+
 app.use('/uploads', express.static(__dirname + '/uploads'));
 app.use(express.json());
 app.use(cookieParser());
+app.use(express.static(path.join(__dirname, '../client/dist')));
+
+app.get('*', function(req, res){
+  res.sendFile(path.join(__dirname, '../client/dist/index.html'));
+})
+
 app.use(cors({
   credentials: true,
   origin: "http://localhost:5173",
@@ -161,7 +173,13 @@ app.post('/register', async (req,res) => {
   }
 });
 
-const server = app.listen(4040);
+// const server = app.listen(4040);
+
+
+
+server.listen(PORT, () => {
+  // console.log(`Server is running on port ${PORT}`);
+});
 
 const wss = new ws.WebSocketServer({server});
 wss.on('connection', (connection, req) => {
@@ -183,7 +201,7 @@ wss.on('connection', (connection, req) => {
       clearInterval(connection.timer);
       connection.terminate();
       notifyAboutOnlinePeople();
-      console.log('dead');
+      // console.log('dead');
     }, 1000);
   }, 5000);
 
@@ -213,14 +231,14 @@ wss.on('connection', (connection, req) => {
     const {recipient, text, file} = messageData;
     let filename = null;
     if (file) {
-      console.log('size', file.data.length);
+      // console.log('size', file.data.length);
       const parts = file.name.split('.');
       const ext = parts[parts.length - 1];
       filename = Date.now() + '.'+ext;
       const path = __dirname + '/uploads/' + filename;
       const bufferData = new Buffer(file.data.split(',')[1], 'base64');
       fs.writeFile(path, bufferData, () => {
-        console.log('file saved:'+path);
+        // console.log('file saved:'+path);
       });
     }
     if (recipient && (text || file)) {
@@ -230,7 +248,7 @@ wss.on('connection', (connection, req) => {
         text,
         file: file ? filename : null,
       });
-      console.log('created message');
+      // console.log('created message');
       [...wss.clients]
         .filter(c => c.userId === recipient)
         .forEach(c => c.send(JSON.stringify({
@@ -242,7 +260,6 @@ wss.on('connection', (connection, req) => {
         })));
     }
   });
-
-  // notify everyone about online people (when someone connects)
+// notify everyone about online people (when someone connects)
   notifyAboutOnlinePeople();
 });
